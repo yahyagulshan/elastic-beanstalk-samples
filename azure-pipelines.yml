@@ -1,14 +1,12 @@
 name: spa-admin-$(Build.SourceBranchName)-$(rev:rso)
 
 trigger:
-  - main
-  - develop
-  - release
+  - test
+
 
 pr:
-  - main
-  - develop
-  - release
+  - test
+
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -116,17 +114,17 @@ stages:
     condition: and(or(eq(variables.isFeature, true), eq(variables.isDevelop, true)), ne(variables['Build.Reason'], 'PullRequest'))
     dependsOn: [build]
     variables:
-      - group: creds-dev
+      - group: creds-test
       - name: webAppName
-        value: 'evntmgmt-webapp-dev'
+        value: 'Test'
       - name: artifactName
-        value: 'spa-admin-dev'
+        value: 'Test'
     jobs:
       - deployment: app
         displayName: 'Deploy to DEV'
         pool:
           vmImage: 'windows-2019'
-        environment: DEV
+        environment: TEST
         strategy:
           runOnce:
             deploy:
@@ -140,7 +138,7 @@ stages:
               - task: AzureRmWebAppDeployment@4
                 displayName: 'Azure App Service Deploy spa-admin'
                 inputs:
-                  azureSubscription: 'lixar-dev'
+                  azureSubscription: 'Test'
                   appType: webApp
                   WebAppName: '$(webAppName)'
                   Package: '$(System.DefaultWorkingDirectory)/$(artifactName)/**/*.zip'
@@ -150,80 +148,7 @@ stages:
                   ExcludeFilesFromAppDataFlag: false
                   RenameFilesFlag: false
 
-  - stage: deployqa
-    displayName: 'Deploy to QA'
-    condition: and(succeeded(), or(eq(variables.isRelease, true), eq(variables.isHotfix, true)))
-    dependsOn: [build]
-    variables:
-      - group: creds-qa
-      - name: webAppName
-        value: 'evntmgmt-webapp-qa'
-      - name: artifactName
-        value: 'spa-admin-qa'
-    jobs:
-      - deployment: app
-        displayName: 'Deploy to QA'
-        pool:
-          vmImage: 'windows-2019'
-        environment: QA
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-              - task: DownloadPipelineArtifact@2
-                displayName: 'Download $(artifactName)'
-                inputs:
-                  artifact: $(artifactName)
-                  path: $(System.DefaultWorkingDirectory)/$(artifactName)
 
-              - task: AzureRmWebAppDeployment@4
-                displayName: 'Azure App Service Deploy spa-admin'
-                inputs:
-                  azureSubscription: 'lixar-qa'
-                  appType: webApp
-                  WebAppName: '$(webAppName)'
-                  Package: '$(System.DefaultWorkingDirectory)/$(artifactName)/**/*.zip'
-                  VirtualApplication: /Admin
-                  enableCustomDeployment: true
-                  RemoveAdditionalFilesFlag: true
-                  ExcludeFilesFromAppDataFlag: false
-                  RenameFilesFlag: false
 
-  - stage: deployprod
-    displayName: 'Deploy to Prod'
-    condition: and(succeeded(), eq(variables.isMain, true))
-    dependsOn: [build]
-    variables:
-      - group: creds-prod
-      - name: webAppName
-        value: 'evntmgmt-webapp-prod'
-      - name: artifactName
-        value: 'spa-admin-prod'
-    jobs:
-      - deployment: app
-        displayName: 'Deploy to Prod'
-        pool:
-          vmImage: 'windows-2019'
-        environment: PROD
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-              - task: DownloadPipelineArtifact@2
-                displayName: 'Download $(artifactName)'
-                inputs:
-                  artifact: $(artifactName)
-                  path: $(System.DefaultWorkingDirectory)/$(artifactName)
 
-              - task: AzureRmWebAppDeployment@4
-                displayName: 'Azure App Service Deploy spa-admin'
-                inputs:
-                  azureSubscription: 'lixar-prod'
-                  appType: webApp
-                  WebAppName: '$(webAppName)'
-                  Package: '$(System.DefaultWorkingDirectory)/$(artifactName)/**/*.zip'
-                  VirtualApplication: /Admin
-                  enableCustomDeployment: true
-                  RemoveAdditionalFilesFlag: true
-                  ExcludeFilesFromAppDataFlag: false
-                  RenameFilesFlag: false
+
